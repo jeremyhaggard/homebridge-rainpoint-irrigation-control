@@ -47,6 +47,18 @@ Platform name must be **`RainpointIrrigationControl`**:
 | flatValves | false | Standalone valves vs IrrigationSystem |
 | debugmode | false | Verbose logs |
 
+## Tested devices
+
+Live HomeKit testing (2026-08-29):
+
+| Model | Role | Control |
+|---|---|---|
+| HWG023WBRF | Wi‑Fi gateway | Discovery / relay |
+| HTV210B | 2-zone BLE hose timer | Both zones ON/OFF |
+| 1-zone RF timer (misters) | Same hub | ON/OFF |
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## Tips
 
 - Prefer a **child bridge** for isolation.

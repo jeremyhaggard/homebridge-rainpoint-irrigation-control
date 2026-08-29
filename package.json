@@ -1,13 +1,14 @@
 {
   "name": "homebridge-rainpoint-irrigation-control",
   "displayName": "Rainpoint Irrigation Control",
-  "version": "1.0.5",
-  "description": "Homebridge platform for RainPoint / HomGar irrigation hubs, timers, and soil sensors. Skips empty cloud placeholders that crash other plugins.",
+  "version": "1.1.0",
+  "description": "Homebridge platform for RainPoint / HomGar irrigation hubs, timers, and soil sensors. Tested with HWG023WBRF and HTV210B.",
   "main": "dist/index.js",
   "files": [
     "dist",
     "config.schema.json",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
