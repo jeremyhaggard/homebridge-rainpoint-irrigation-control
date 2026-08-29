@@ -1,0 +1,62 @@
+{
+  "pluginAlias": "RainpointIrrigationControl",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Rainpoint Irrigation Control — efficient HomeKit bridge for RainPoint / HomGar hubs, timers, and sensors. Empty cloud placeholders are ignored automatically.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Rainpoint Irrigation",
+        "required": true
+      },
+      "email": {
+        "title": "Email",
+        "type": "string",
+        "required": true,
+        "description": "RainPoint Home / HomGar account email"
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "required": true,
+        "description": "Account password"
+      },
+      "regionHome": {
+        "title": "Region",
+        "type": "string",
+        "default": "US",
+        "oneOf": [
+          { "title": "US / International", "enum": ["US"] },
+          { "title": "China", "enum": ["CN"] }
+        ]
+      },
+      "homeIndex": {
+        "title": "Home index",
+        "type": "integer",
+        "default": 0,
+        "minimum": 0,
+        "description": "Which home to use if the account has more than one (0 = first)"
+      },
+      "pollInterval": {
+        "title": "Poll interval (seconds)",
+        "type": "integer",
+        "default": 30,
+        "minimum": 10
+      },
+      "flatValves": {
+        "title": "Flat valves",
+        "type": "boolean",
+        "default": false,
+        "description": "Expose each zone as a standalone Valve instead of an IrrigationSystem group"
+      },
+      "debugmode": {
+        "title": "Debug logging",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
+}

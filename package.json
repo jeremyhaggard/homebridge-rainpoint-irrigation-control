@@ -1,0 +1,47 @@
+{
+  "name": "homebridge-rainpoint-irrigation-control",
+  "displayName": "Rainpoint Irrigation Control",
+  "version": "1.0.0",
+  "description": "Homebridge platform for RainPoint / HomGar irrigation hubs, timers, and soil sensors. Skips empty cloud placeholders that crash other plugins.",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "config.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "engines": {
+    "node": "^18.20.0 || ^20.18.0 || ^22 || ^24",
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge",
+    "rainpoint",
+    "homgar",
+    "irrigation",
+    "valve",
+    "sprinkler",
+    "homekit"
+  ],
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Your Name"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control/issues"
+  },
+  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control#readme",
+  "funding": [],
+  "peerDependencies": {
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "dependencies": {}
+}
