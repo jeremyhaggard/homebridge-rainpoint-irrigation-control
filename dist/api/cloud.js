@@ -447,23 +447,29 @@ class HomGarCloud {
         }
     }
     async controlWorkModeDp(params) {
-        const seconds = Math.max(0, Math.floor(Number(params.duration) || 0));
-        const buf = Buffer.alloc(4);
-        buf.writeUInt32LE(seconds);
+        // Captured RainPoint Home / HTV210B format (ha-rainpoint 3.0.29):
+        // body uses "param" (LE hex seconds), NOT "data"/"duration"/"hid".
+        // hid is sent as an HTTP header.
+        const mode = Number(params.mode);
+        let param = '00000000';
+        if (mode !== 0) {
+            const seconds = Math.max(0, Math.floor(Number(params.duration) || 0));
+            const buf = Buffer.alloc(4);
+            buf.writeUInt32LE(seconds);
+            param = buf.toString('hex');
+        }
         const dpPayload = {
             mid: String(params.mid),
-            addr: Number(params.addr) || 0,
-            deviceName: String(params.deviceName || ''),
             productKey: String(params.productKey || ''),
+            deviceName: String(params.deviceName || ''),
+            mode,
+            addr: Number(params.addr) || 0,
             port: Number(params.port) || 1,
-            mode: Number(params.mode),
-            duration: seconds,
-            hid: String(params.hid),
+            param,
             dpCode: 1,
-            data: buf.toString('hex'),
         };
         try {
-            await this.request('POST', '/app/device/controlWorkModeDP', dpPayload);
+            await this.request('POST', '/app/device/controlWorkModeDP', dpPayload, true, false, String(params.hid || this.hid || ''));
         }
         catch (error) {
             if (error.code === 4) {
@@ -473,7 +479,7 @@ class HomGarCloud {
             throw error;
         }
     }
-    async request(method, path, body, requireAuth = true, retried = false) {
+    async request(method, path, body, requireAuth = true, retried = false, hidHeader) {
         if (requireAuth) {
             await this.ensureAuthenticated();
         }
@@ -487,6 +493,9 @@ class HomGarCloud {
         };
         if (requireAuth && this.token) {
             headers['auth'] = this.token;
+        }
+        if (hidHeader) {
+            headers['hid'] = String(hidHeader);
         }
         const url = new URL(path, this.baseUrl);
         const urlStr = url.toString();
@@ -527,7 +536,7 @@ class HomGarCloud {
                                 this.token = '';
                                 this.tokenExpired = 0;
                                 this.login().then(() => {
-                                    resolve(this.request(method, path, body, requireAuth, true));
+                                    resolve(this.request(method, path, body, requireAuth, true, hidHeader));
                                 }).catch(reject);
                                 return;
                             }
