@@ -29,16 +29,16 @@
   ],
   "license": "Apache-2.0",
   "author": {
-    "name": "Your Name"
+    "name": "jeremyhaggard"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control.git"
+    "url": "https://github.com/jeremyhaggard/homebridge-rainpoint-irrigation-control.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control/issues"
+    "url": "https://github.com/jeremyhaggard/homebridge-rainpoint-irrigation-control/issues"
   },
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/homebridge-rainpoint-irrigation-control#readme",
+  "homepage": "https://github.com/jeremyhaggard/homebridge-rainpoint-irrigation-control#readme",
   "funding": [],
   "peerDependencies": {
     "homebridge": "^1.8.0 || ^2.0.0"
