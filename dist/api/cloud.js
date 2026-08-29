@@ -232,20 +232,35 @@ class HomGarCloud {
         };
     }
     async sendZoneCommand(deviceId, port, mode, durationSeconds) {
-        const { hubId, hub, addr } = this.resolveControlTarget(deviceId);
+        const { hubId, hub, addr, device } = this.resolveControlTarget(deviceId);
+        const model = String((device && device.model) || (hub && hub.model) || '').toUpperCase();
+        const useDpFirst = model.includes('210') || model.includes('HTV210') || (device && device.portNumber > 1);
         const payload = this.buildControlPayload(hubId, hub, addr, port, mode, durationSeconds);
-        this.log.info('[Cloud] Control %s port=%s mode=%s duration=%s mid=%s addr=%s hid=%s deviceName=%s',
-            mode === CONTROL_MODE_OPEN ? 'ON' : 'OFF', payload.port, payload.mode, payload.duration,
-            payload.mid, payload.addr, payload.hid, payload.deviceName || '(empty)');
-        try {
-            await this.controlWorkMode(payload);
-            return;
+        this.log.info('[Cloud] Control %s model=%s deviceId=%s hub=%s addr=%s port=%s',
+            mode === CONTROL_MODE_OPEN ? 'ON' : 'OFF', model || '?', deviceId, hubId, addr, port);
+        const attempts = [];
+        if (useDpFirst) {
+            attempts.push(() => this.controlWorkModeDp(payload));
+            // HTV210B: also try commanding the sub-device mid directly
+            const subPayload = Object.assign({}, payload, { mid: String(deviceId) });
+            attempts.push(() => this.controlWorkModeDp(subPayload));
+            attempts.push(() => this.controlWorkMode(payload));
+        } else {
+            attempts.push(() => this.controlWorkMode(payload));
+            attempts.push(() => this.controlWorkModeDp(payload));
         }
-        catch (error) {
-            if (error.code !== 3) throw error;
-            this.log.warn('[Cloud] controlWorkMode returned code 3 — retrying controlWorkModeDP');
-            await this.controlWorkModeDp(payload);
+        let lastErr = null;
+        for (const run of attempts) {
+            try {
+                await run();
+                return;
+            } catch (error) {
+                lastErr = error;
+                if (error.code === 4) return;
+                this.log.warn('[Cloud] attempt failed code=%s %s', error.code, error.message || error);
+            }
         }
+        throw lastErr;
     }
     async turnZoneOn(deviceId, port, durationSeconds) {
         await this.sendZoneCommand(deviceId, port, CONTROL_MODE_OPEN, durationSeconds ?? 0);
@@ -267,7 +282,7 @@ class HomGarCloud {
         if (!hub)
             throw new Error(`Hub ${hubId} not found for device ${deviceId}`);
         const addr = dev.isSubDevice ? dev.addr : 0;
-        return { hubId, hub, addr };
+        return { hubId, hub, addr, device: dev };
     }
     normalizeDevice(device, addr, name, isSubDevice, parentId, zoneNames) {
         const portNumber = device.portNumber || 1;
