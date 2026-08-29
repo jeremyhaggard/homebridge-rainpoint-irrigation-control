@@ -239,7 +239,14 @@ class IrrigationPlatform {
   }
 
   async refreshStatuses() {
-    const map = await this.cloud.getDeviceStatuses();
+    const ids = [...this.knownIds];
+    let map;
+    try {
+      map = await this.cloud.getDeviceStatuses(ids.length ? ids : undefined);
+    } catch (err) {
+      this.log.warn("Status fetch failed: %s", err.message || err);
+      return;
+    }
     if (!map) return;
     // cloud client returns Map or object depending on version — normalize
     if (map instanceof Map) {

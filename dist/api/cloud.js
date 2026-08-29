@@ -167,13 +167,22 @@ class HomGarCloud {
     }
     async getDeviceStatuses(deviceIds) {
         const result = new Map();
-        if (deviceIds.length === 0)
-            return result;
         // Ensure the device cache is populated (control + status resolution depend
         // on knowing each id's hub, addr, deviceName and productKey).
         if (this.deviceCache.size === 0) {
             await this.getDevices();
         }
+        // Platform may call with no args — poll every non-hub device in the cache.
+        if (!deviceIds || !Array.isArray(deviceIds)) {
+            deviceIds = [];
+            for (const [id, dev] of this.deviceCache) {
+                if (dev && dev.deviceType !== constants_1.KIND_HUB) {
+                    deviceIds.push(id);
+                }
+            }
+        }
+        if (deviceIds.length === 0)
+            return result;
         // Resolve the unique set of hub mids to query. A sub-device's status is
         // delivered inside its hub's status response (keyed by addr), so we only
         // ever query hubs — never sub-device sids directly.
