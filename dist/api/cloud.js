@@ -218,31 +218,40 @@ class HomGarCloud {
         }
         return result;
     }
-    async turnZoneOn(deviceId, port, durationSeconds) {
+    buildControlPayload(hubId, hub, addr, port, mode, durationSeconds) {
+        const duration = Math.max(0, Math.floor(Number(durationSeconds) || 0));
+        return {
+            mid: String(hubId),
+            addr: Number(addr) || 0,
+            deviceName: String(hub.deviceName || ''),
+            productKey: String(hub.productId || ''),
+            port: Number(port) || 1,
+            mode: Number(mode),
+            duration,
+            hid: String(this.hid),
+        };
+    }
+    async sendZoneCommand(deviceId, port, mode, durationSeconds) {
         const { hubId, hub, addr } = this.resolveControlTarget(deviceId);
-        await this.controlWorkMode({
-            mid: hubId,
-            addr,
-            deviceName: hub.deviceName,
-            productKey: hub.productId,
-            port,
-            mode: CONTROL_MODE_OPEN,
-            duration: durationSeconds ?? 0,
-            hid: this.hid,
-        });
+        const payload = this.buildControlPayload(hubId, hub, addr, port, mode, durationSeconds);
+        this.log.info('[Cloud] Control %s port=%s mode=%s duration=%s mid=%s addr=%s hid=%s deviceName=%s',
+            mode === CONTROL_MODE_OPEN ? 'ON' : 'OFF', payload.port, payload.mode, payload.duration,
+            payload.mid, payload.addr, payload.hid, payload.deviceName || '(empty)');
+        try {
+            await this.controlWorkMode(payload);
+            return;
+        }
+        catch (error) {
+            if (error.code !== 3) throw error;
+            this.log.warn('[Cloud] controlWorkMode returned code 3 — retrying controlWorkModeDP');
+            await this.controlWorkModeDp(payload);
+        }
+    }
+    async turnZoneOn(deviceId, port, durationSeconds) {
+        await this.sendZoneCommand(deviceId, port, CONTROL_MODE_OPEN, durationSeconds ?? 0);
     }
     async turnZoneOff(deviceId, port) {
-        const { hubId, hub, addr } = this.resolveControlTarget(deviceId);
-        await this.controlWorkMode({
-            mid: hubId,
-            addr,
-            deviceName: hub.deviceName,
-            productKey: hub.productId,
-            port,
-            mode: CONTROL_MODE_CLOSE,
-            duration: 0,
-            hid: this.hid,
-        });
+        await this.sendZoneCommand(deviceId, port, CONTROL_MODE_CLOSE, 0);
     }
     /**
      * Resolve a device id (main or sub) to the controlWorkMode target triple:
@@ -414,11 +423,36 @@ class HomGarCloud {
             await this.request('POST', '/app/device/controlWorkMode', params);
         }
         catch (error) {
-            // Code 4 = device already in the requested state (idempotent). The
-            // battle-tested integration treats this as success, not an error.
             const code = error.code;
             if (code === 4) {
-                this.log.debug('controlWorkMode: device already in requested state (code 4)');
+                this.log.info('[Cloud] controlWorkMode code 4 (already in requested state)');
+                return;
+            }
+            throw error;
+        }
+    }
+    async controlWorkModeDp(params) {
+        const seconds = Math.max(0, Math.floor(Number(params.duration) || 0));
+        const buf = Buffer.alloc(4);
+        buf.writeUInt32LE(seconds);
+        const dpPayload = {
+            mid: String(params.mid),
+            addr: Number(params.addr) || 0,
+            deviceName: String(params.deviceName || ''),
+            productKey: String(params.productKey || ''),
+            port: Number(params.port) || 1,
+            mode: Number(params.mode),
+            duration: seconds,
+            hid: String(params.hid),
+            dpCode: 1,
+            data: buf.toString('hex'),
+        };
+        try {
+            await this.request('POST', '/app/device/controlWorkModeDP', dpPayload);
+        }
+        catch (error) {
+            if (error.code === 4) {
+                this.log.info('[Cloud] controlWorkModeDP code 4 (already in requested state)');
                 return;
             }
             throw error;
@@ -442,9 +476,13 @@ class HomGarCloud {
         const url = new URL(path, this.baseUrl);
         const urlStr = url.toString();
         const requestBody = body ? JSON.stringify(body) : undefined;
-        this.log.debug('%s %s', method, urlStr);
-        if (requestBody) {
-            this.log.debug('Request body: %s', requestBody);
+        const isControl = path.indexOf('controlWorkMode') !== -1;
+        if (isControl) {
+            this.log.info('%s %s', method, urlStr);
+            if (requestBody) this.log.info('Request body: %s', requestBody);
+        } else {
+            this.log.debug('%s %s', method, urlStr);
+            if (requestBody) this.log.debug('Request body: %s', requestBody);
         }
         // API error codes that indicate the token was rejected (expired/invalid).
         // On these codes we force a fresh login and retry the request once.
